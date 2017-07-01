@@ -1,0 +1,206 @@
+<html>
+  <head>
+    <style>
+      #container{
+        font-family:monospace;
+        font-weight:bold;
+      }
+    </style>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  </head>
+  
+  <body>
+    
+    <div id="container">
+    <p id="scoreDisplay" style="font-size: xx-large;">
+        0
+    </p>
+    <canvas id="gameCanvas" width="600px" height="600px" style="background: lightblue; margin:20px">
+        
+        
+    </canvas> 
+    </div>
+      
+    <script>
+        var MAX_CANVAS_WIDTH = 600;
+        var MAX_CANVAS_HEIGHT = 600;
+        var BOX_SIZE = 15;
+        var MAX_GRID_WIDTH = MAX_CANVAS_WIDTH / BOX_SIZE;
+        var MAX_GRID_HEIGHT = MAX_CANVAS_HEIGHT / BOX_SIZE;
+        var INITIAL_FRUIT_NUM = 20;
+        var INITIAL_BODY_LENGTH = 5;
+        var canvas = document.getElementById("gameCanvas");
+        var context = canvas.getContext("2d");
+        var EMPTY_COLOR = "lightblue", FRUIT_COLOR = "red", SNAKE_COLOR = "black";
+        var grid = new Array(MAX_GRID_HEIGHT);
+        var currentDirection = 2;
+        var speed=500;
+        var speedScale = 2;
+        var score = 0;
+        for(var i = 0; i < MAX_GRID_HEIGHT; i++){
+            grid[i] = new Array(MAX_GRID_WIDTH);
+            for(var j = 0; j < MAX_GRID_WIDTH; j++){
+                grid[i][j] = 0;
+            }
+        }
+        createGrid(MAX_CANVAS_WIDTH, MAX_CANVAS_HEIGHT, BOX_SIZE, 0, EMPTY_COLOR);
+        
+        var snakeBody = [[5,0],[4,0],[3,0],[2,0],[1,0]];
+        var pressKey = 2;
+        var gameLoopInt;
+        document.addEventListener("DOMContentLoaded", function(event) {
+            for(let i=0; i<INITIAL_FRUIT_NUM; i++){ // initiate fruits
+                putNewFruit();
+            }
+            for(var j = 0; j < INITIAL_BODY_LENGTH; j++){
+                placeSquare(snakeBody[j][0],snakeBody[j][1], 2);
+            }
+            gameLoopInt = setInterval(gameLoop, speed);
+        });
+        
+        
+        function createGrid(width, height, boxSize, padding, lineColor){
+            
+            for(var i = 0; i <= width; i += boxSize){
+                context.moveTo(0.5 + i + padding, padding);
+                context.lineTo(0.5 + i + padding, height + padding);
+            }
+            
+            for(var i = 0; i <= height; i += boxSize){
+                context.moveTo(padding, 0.5 + i + padding);
+                context.lineTo(width + padding, 0.5 + i + padding);
+            }
+            context.strokeStyle = lineColor;
+            context.stroke();
+            
+        }
+        
+            
+        // 0 = empty, 1 = fruit, 2 = snake
+        function placeSquare(x, y, type){
+            if(type == 1){
+                context.fillStyle = FRUIT_COLOR;
+            }
+            else if(type == 2){
+                context.fillStyle = SNAKE_COLOR;
+            }
+            else {
+                context.fillStyle = EMPTY_COLOR;
+            }
+            context.fillRect(x * BOX_SIZE, y * BOX_SIZE, BOX_SIZE, BOX_SIZE);
+            grid[x][y] = type;
+        }
+        
+        function arrayIn(source, array){
+            for(let i in array){
+                if(JSON.stringify(source) == JSON.stringify(array[i])){
+                    return true;
+                }
+            }
+            return false;
+        }
+        function arrayInIndex(source, array){
+            for(let i in array){
+                if(JSON.stringify(source) == JSON.stringify(array[i])){
+                    return i;
+                }
+            }
+            return -1;
+        }
+        document.addEventListener('keydown', function(event) {
+            if(event.keyCode == 37 || event.keyCode == 65  || event.keyCode == 100) {
+               //numpad 4 or left or A key
+                
+              if(currentDirection != 6)key(4);
+            }
+            else if(event.keyCode == 39 || event.keyCode == 68 || event.keyCode == 102) {
+                //numpad 6 || right or D key
+                if(currentDirection != 4)key(6);
+             }
+            else if(event.keyCode == 87 || event.keyCode == 38 || event.keyCode == 104){
+                //numpad 8 or up or W key
+                if(currentDirection != 2)key(8);
+            }
+            else if(event.keyCode == 83 || event.keyCode == 40 || event.keyCode == 98){
+                //numpad 2 or down or s key
+                if(currentDirection != 8)key(2);
+            }
+        });
+        function key(num){
+            pressKey = num;
+        }
+        var gameLoop = function(){
+            var oldPoint = snakeBody[0];
+            var newPoint;
+            if(pressKey == 2){// down
+                newPoint = [oldPoint[0],oldPoint[1]+1];
+            }else if(pressKey == 4){ // left
+                newPoint = [oldPoint[0]-1,oldPoint[1]];
+            }else if(pressKey == 6){ // right
+                newPoint = [oldPoint[0]+1,oldPoint[1]];
+            }else{ // up
+                newPoint = [oldPoint[0],oldPoint[1]-1];
+            }
+            if(!isAlive(newPoint, snakeBody)) return death();
+            else if(tryToEatFruit(newPoint)){ // get the fruit
+                if(snakeBody.length%5==0){
+                    window.clearInterval(gameLoopInt);
+                    speed -= (speed/(speedScale++));
+                    gameLoopInt = setInterval(gameLoop,speed - (speed/speedScale));                
+                }
+                putNewFruit();
+                score++;
+                document.getElementById("scoreDisplay").innerHTML = score;
+                //grid[newPoint[0]][newPoint[1]] = 0;
+                snakeBody.unshift(newPoint);
+                placeSquare(newPoint[0],newPoint[1], 2);
+            } else{
+                let tail = snakeBody.pop();
+                snakeBody.unshift(newPoint);
+                placeSquare(tail[0], tail[1], 0);
+                placeSquare(newPoint[0],newPoint[1], 2);
+                //grid[tail[0]][tail[1]] = 0;
+            }
+            //grid[newPoint[0]][newPoint[1]] = 2;
+            currentDirection=pressKey;
+        };
+        
+        function isAlive(newPoint,snakeBody){
+            if ((newPoint[0]<0 || newPoint[0] > (MAX_GRID_WIDTH-1)) || (newPoint[1] < 0 || newPoint[1] > (MAX_GRID_HEIGHT-1))) 
+                return false;
+            let snakeIndex = arrayInIndex(newPoint, snakeBody);
+            console.log(snakeIndex);
+            if(snakeIndex > -1 && snakeIndex != snakeBody.length-1 )
+                return false;
+            return true;
+        }
+        
+        function putNewFruit(){
+            var tempFruit=[-1,-1];
+            while(tempFruit[0] < 0 || tempFruit[1] < 0 || grid[tempFruit[0]][tempFruit[1]] == 1 || grid[tempFruit[0]][tempFruit[1]] == 2)  {
+                tempFruit = [Math.floor(Math.random()*MAX_GRID_WIDTH),Math.floor(Math.random()*MAX_GRID_HEIGHT)];
+            }
+            placeSquare(tempFruit[0],tempFruit[1],1);
+            //grid[tempFruit[0]][tempFruit[1]] = 1;
+            
+        }
+        function tryToEatFruit(xy){
+            if(grid[xy[0]][xy[1]] == 1) 
+                return true;
+            return false;
+        }
+        function death(){
+            clearInterval(gameLoopInt);
+            console.log("snake is dead now");
+            //delete snake body and delete snake 
+        }
+      </script>
+    
+  </body>
+    
+</html>
+
+<!-- 
+Your last JavaScript (Node) code is saved below:
+
+ -->
