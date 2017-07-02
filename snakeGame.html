@@ -4,6 +4,7 @@
       #container{
         font-family:monospace;
         font-weight:bold;
+	font-size: xx-large;
       }
     </style>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
@@ -12,13 +13,11 @@
   <body>
     
     <div id="container">
-    <p id="scoreDisplay" style="font-size: xx-large;">
-        0
+    <p>
+	Score: <span id="scoreDisplay">0</span><br>
+	Level: <span id="levelDisplay">0</span>
     </p>
-    <canvas id="gameCanvas" width="600px" height="600px" style="background: lightblue; margin:20px">
-        
-        
-    </canvas> 
+    <canvas id="gameCanvas" width="600px" height="600px" style="background: lightblue; margin:20px"></canvas> 
     </div>
       
     <script>
@@ -37,6 +36,7 @@
         var speed=500;
         var speedScale = 2;
         var score = 0;
+	var level = 0;
         for(var i = 0; i < MAX_GRID_HEIGHT; i++){
             grid[i] = new Array(MAX_GRID_WIDTH);
             for(var j = 0; j < MAX_GRID_WIDTH; j++){
@@ -146,11 +146,14 @@
                 if(snakeBody.length%5==0){
                     window.clearInterval(gameLoopInt);
                     speed -= (speed/(speedScale++));
-                    gameLoopInt = setInterval(gameLoop,speed - (speed/speedScale));                
+                    gameLoopInt = setInterval(gameLoop,speed - (speed/speedScale));   
+		    level++;
+		    document.getElementById("levelDisplay").innerHTML = level;             
                 }
                 putNewFruit();
                 score++;
                 document.getElementById("scoreDisplay").innerHTML = score;
+		
                 //grid[newPoint[0]][newPoint[1]] = 0;
                 snakeBody.unshift(newPoint);
                 placeSquare(newPoint[0],newPoint[1], 2);
@@ -199,8 +202,3 @@
   </body>
     
 </html>
-
-<!-- 
-Your last JavaScript (Node) code is saved below:
-
- -->
